@@ -1,41 +1,53 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import './index.css';
 import AddTransaction from './components/AddTransaction';
 import TransactionList from './components/TransactionList';
 import Balance from './components/balance';
 import IncomeExpense from './components/IncomeExpense';
+import axios from 'axios';
 
 function App() {
-    const [transactions, setTransactions] = useState([
-        { id: 1, title: "laptop", amount: -60000 },
-        { id: 2, title: "salary", amount: 250000 },
-        { id: 3, title: "trip-vietnam", amount: -70000 },
-        { id: 4, title: "dress", amount: -1500 },
-    ]);
+  const [transactions, setTransactions] = useState([]);
 
-    const onAddTransaction = (data) => {
-        const modifyData = { ...data, id: Math.random() * 1000 };
-        setTransactions([...transactions, modifyData]);
-    };
+  useEffect(() => {
+    axios
+      .get('http://localhost:8001/api/expenses')
+      .then((res) => setTransactions(res.data))
+      .catch((err) => console.error('Error fetching transactions:', err));
+  }, []);
 
-    const onDeleteTransaction = (id) => {
-        const newTransactions = transactions.filter((eachTransaction) => eachTransaction.id !== id);
-        setTransactions(newTransactions);
-    };
+  const onAddTransaction = (data) => {
+    axios
+      .post('http://localhost:8001/api/expenses', data) 
+      .then((res) => {
+        setTransactions([...transactions, res.data]); 
+      })
+      .catch((err) => console.error('Error adding transaction:', err));
+  };
 
-    return (
-        <>
-            <h1>Expense Tracker</h1>
-            <div className="container">
-                <Balance transactions={transactions} />
-                <IncomeExpense transactions={transactions} />
-                <AddTransaction onAdd={onAddTransaction} />
-                <TransactionList transactions={transactions} onDelete={onDeleteTransaction} />
-                
-            </div>
-        </>
-    );
+  const onDeleteTransaction = (id) => {
+    console.log('Deleting transaction with ID:', id);
+    axios
+      .delete(`http://localhost:8001/api/expenses/${id}`) 
+      .then(() => {
+        console.log('Transaction deleted successfully');
+        setTransactions(transactions.filter((transaction) => transaction.id !== id)); 
+      })
+      .catch((err) => console.error('Error deleting transaction:', err));
+  };
+
+  return (
+    <>
+      <h1>Expense Tracker</h1>
+      <div className="container">
+        <Balance transactions={transactions} />
+        <IncomeExpense transactions={transactions} />
+        <AddTransaction onAdd={onAddTransaction} />
+        <TransactionList transactions={transactions} onDelete={onDeleteTransaction} />
+      </div>
+    </>
+  );
 }
 
 export default App;
